@@ -19,21 +19,25 @@ func NewSplitIter(length int, step int) *SplitIter {
 	}
 }
 
-func (iter *SplitIter) Next() (start, end int, hasNext bool) {
+func (iter *SplitIter) Next() (start, end int, ok, hasNext bool) {
 	finished := atomic.LoadInt32(&iter.finish) == 1
 	if finished {
-		return int(iter.nextStart), int(iter.nextEnd), false
+		return int(iter.nextStart), int(iter.nextEnd), true, false
 	}
 	oldEnd := atomic.LoadInt64(&iter.nextEnd)
-	atomic.StoreInt64(&iter.nextStart, oldEnd)
+	if !atomic.CompareAndSwapInt64(&iter.nextStart, iter.nextStart, oldEnd) {
+		return
+	}
 	newEnd := oldEnd + iter.step
 	if newEnd >= iter.l {
 		newEnd = iter.l
 		if !atomic.CompareAndSwapInt32(&iter.finish, iter.finish, 1) {
-			return 0, 0, false
+			return
 		}
 		finished = true
 	}
-	atomic.StoreInt64(&iter.nextEnd, newEnd)
-	return int(oldEnd), int(newEnd), !finished
+	if !atomic.CompareAndSwapInt64(&iter.nextEnd, iter.nextEnd, newEnd) {
+		return
+	}
+	return int(oldEnd), int(newEnd), true, !finished
 }

@@ -4,6 +4,8 @@ confunc: 并发事件处理,内建eventCh, 可控制eventCh大小和并发gorout
 
 nonull: 初始化结构体
 
+oss: 阿里oss前端直传解决方案
+
 utils:
 
     1.检查GBK编码
